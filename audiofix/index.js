@@ -1,18 +1,24 @@
 import { instead } from "@vendetta/patcher";
+import { Alert } from "react-native";
 
 let unpatch: (() => void) | undefined;
 
 export function onLoad() {
-    const audioManager = globalThis.nativeModuleProxy?.AudioManager;
+    const proxy = (globalThis as any).nativeModuleProxy;
+    const audioManager = proxy?.AudioManager;
 
-    console.log("[AudioFix] AudioManager:", audioManager);
-    console.log(
-        "[AudioFix] setCommunicationModeOn:",
-        typeof audioManager?.setCommunicationModeOn
+    Alert.alert(
+        "AudioFix Debug",
+        `Proxy: ${typeof proxy}\n` +
+        `AudioManager: ${typeof audioManager}\n` +
+        `Method: ${typeof audioManager?.setCommunicationModeOn}`
     );
 
-    if (typeof audioManager?.setCommunicationModeOn !== "function") {
-        console.warn("[AudioFix] Native audio method unavailable");
+    if (
+        !audioManager ||
+        typeof audioManager.setCommunicationModeOn !== "function"
+    ) {
+        console.warn("[AudioFix] AudioManager method unavailable");
         return;
     }
 
@@ -25,4 +31,5 @@ export function onLoad() {
 
 export function onUnload() {
     unpatch?.();
+    unpatch = undefined;
 }
