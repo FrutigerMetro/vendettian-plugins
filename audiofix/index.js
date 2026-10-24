@@ -1,10 +1,7 @@
-import { instead } from "@vendetta/patcher";
-import { ReactNative } from "@vendetta/metro/common";
+(function () {
+    "use strict";
 
-let unpatch: (() => void) | undefined;
-
-export function onLoad() {
-    const registry = ReactNative.TurboModuleRegistry;
+    const registry = vendetta.metro.common.ReactNative.TurboModuleRegistry;
 
     const nativeAudio = registry.get("NativeAudioManagerModule");
     const rtnAudio = registry.get("RTNAudioManager");
@@ -13,15 +10,15 @@ export function onLoad() {
     console.log("[AudioFix] RTNAudioManager:", !!rtnAudio);
 
     const audioManager = [nativeAudio, rtnAudio].find(
-        (module) => typeof module?.setCommunicationModeOn === "function"
+        module => typeof module?.setCommunicationModeOn === "function"
     );
 
     if (!audioManager) {
         console.warn("[AudioFix] No compatible audio manager found");
-        return;
+        return {};
     }
 
-    unpatch = instead(
+    const unpatch = vendetta.patcher.instead(
         "setCommunicationModeOn",
         audioManager,
         () => {
@@ -29,10 +26,7 @@ export function onLoad() {
         }
     );
 
-    console.log("[AudioFix] Patch installed successfully");
-}
+    console.log("[AudioFix] Patch installed");
 
-export function onUnload() {
-    unpatch?.();
-    unpatch = undefined;
-}
+    return { onUnload: unpatch };
+})();
