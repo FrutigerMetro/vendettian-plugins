@@ -1,32 +1,35 @@
 import { instead } from "@vendetta/patcher";
-import { Alert } from "react-native";
+import { ReactNative } from "@vendetta/metro/common";
 
 let unpatch: (() => void) | undefined;
 
 export function onLoad() {
-    const proxy = (globalThis as any).nativeModuleProxy;
-    const audioManager = proxy?.AudioManager;
+    const registry = ReactNative.TurboModuleRegistry;
 
-    Alert.alert(
-        "AudioFix Debug",
-        `Proxy: ${typeof proxy}\n` +
-        `AudioManager: ${typeof audioManager}\n` +
-        `Method: ${typeof audioManager?.setCommunicationModeOn}`
+    const nativeAudio = registry.get("NativeAudioManagerModule");
+    const rtnAudio = registry.get("RTNAudioManager");
+
+    console.log("[AudioFix] NativeAudioManagerModule:", !!nativeAudio);
+    console.log("[AudioFix] RTNAudioManager:", !!rtnAudio);
+
+    const audioManager = [nativeAudio, rtnAudio].find(
+        (module) => typeof module?.setCommunicationModeOn === "function"
     );
 
-    if (
-        !audioManager ||
-        typeof audioManager.setCommunicationModeOn !== "function"
-    ) {
-        console.warn("[AudioFix] AudioManager method unavailable");
+    if (!audioManager) {
+        console.warn("[AudioFix] No compatible audio manager found");
         return;
     }
 
     unpatch = instead(
         "setCommunicationModeOn",
         audioManager,
-        () => {}
+        () => {
+            console.log("[AudioFix] Blocked communication mode");
+        }
     );
+
+    console.log("[AudioFix] Patch installed successfully");
 }
 
 export function onUnload() {
