@@ -1,1 +1,28 @@
-(function(t,e,a){"use strict";const n=a.instead("setCommunicationModeOn",e.ReactNative.TurboModuleRegistry.get("NativeAudioManagerModule")===null?e.ReactNative.TurboModuleRegistry.get("RTNAudioManager"):e.ReactNative.TurboModuleRegistry.get("NativeAudioManagerModule"),function(){});return t.onUnload=n,t})({},vendetta.metro.common,vendetta.patcher);
+import { instead } from "@vendetta/patcher";
+
+let unpatch: (() => void) | undefined;
+
+export function onLoad() {
+    const audioManager = globalThis.nativeModuleProxy?.AudioManager;
+
+    console.log("[AudioFix] AudioManager:", audioManager);
+    console.log(
+        "[AudioFix] setCommunicationModeOn:",
+        typeof audioManager?.setCommunicationModeOn
+    );
+
+    if (typeof audioManager?.setCommunicationModeOn !== "function") {
+        console.warn("[AudioFix] Native audio method unavailable");
+        return;
+    }
+
+    unpatch = instead(
+        "setCommunicationModeOn",
+        audioManager,
+        () => {}
+    );
+}
+
+export function onUnload() {
+    unpatch?.();
+}
